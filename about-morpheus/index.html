@@ -1,0 +1,242 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>About Morpheus</title>
+    <meta charset="utf-8" />
+    <link rel="canonical" href="http://koba04.github.io/slides/about-morpheus/#1" />
+    <meta name="description" content="About Morpheus">
+    <meta name="author" content="koba04">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: sans-serif; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      li {
+        margin-bottom: 10px;
+      }
+      img {
+        box-shadow: 0px 5px 15px -5px rgba(0, 0, 0, 0.8);
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/webcomponentsjs/0.5.2/webcomponents.js"></script>
+    <link rel="import" href="../assets/webcomponents/x-sushiyuki/x-sushiyuki.html">
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# About Morpheus
+
+@koba04
+
+---
+
+## Morpheus
+
+<img src="img/morpheus.png" width="100%" />
+
+---
+
+## What is Morpheus?
+
+* Isomorphic web publishing platform
+* React.jsによるserver-side rendering
+* markdownで書ける
+* まだ開発が始まったばかり
+
+---
+
+## Architecture
+
+* React.js
+* Flux
+    * yahoo/fluxible
+* express
+* browserify
+* gulp
+
+---
+
+class: center
+
+## Try it!
+
+<img src="img/en-blog.png" width="80%" />
+
+http://en.blog.koba04.com/ (hosted heroku)
+
+---
+
+class: center, middle
+
+## Implementation
+
+---
+
+## renderToString
+
+bodyはrenderToStringでrenderしている
+
+```js
+  function makeCall(req, res, next, options) {
+    var context = res.locals.context;
+    var fluxibleApp = res.locals.fluxibleApp;
+    context.getActionContext().executeAction(options.action, options.params, function(err) {
+      if (err) {
+        return next(err);
+      }
+      res.locals.state = 'window.Morpheus=' + serialize(fluxibleApp.dehydrate(context)) + ';';
+      var AppComponent = fluxibleApp.getAppComponent();
+      var markup = React.renderToString(AppComponent({ //jshint ignore:line
+        context: context.getComponentContext(),
+        enableScroll: false
+      }));
+      serverUtils.render(res, markup);
+    });
+  }
+```
+
+https://github.com/vesparny/morpheus/blob/develop/server/routes/index.js
+
+---
+
+## renderToStaticMarkup
+
+htmlの部分はrenderToStaticMarkupでrenderしている
+
+```js
+  render: function(res, markup, state) {
+    state = state || res.locals.state;
+    var html = React.renderToStaticMarkup(HtmlComponent({ //jshint ignore:line
+      state: state,
+      markup: markup,
+      context: res.locals.context.getComponentContext()
+    }));
+    res.set({
+      'content-type': 'text/html; charset=utf-8'
+    });
+    res.write('<!doctype>' + html);
+    res.end();
+  },
+```
+
+https://github.com/vesparny/morpheus/blob/develop/server/utils.js
+
+---
+
+## Theme
+
+npmでThemeがインストール出来るようにしたい [\#14](https://github.com/vesparny/morpheus/issues/14)
+
+```sh
+content/themes/blablabla
+├── App.js              ├── Disqus.js
+├── Error.js            ├── Footer.js
+├── GoogleAnalytics.js  ├── Gravatar.js
+├── Header.js           ├── HeaderSingle.js
+├── Html.js             ├── Loader.js
+├── Paginator.js        ├── PostList.js
+├── PostListElement.js  ├── Single.js
+├── Tag.js              ├── TagPage.js
+├── Tags.js
+└── assets
+    ├── css
+    ├── dist
+    ├── fonts
+    ├── img
+    ├── js
+    └── scss
+```
+
+---
+
+## Component
+
+共通ComponentやMixinとしていかないとThemeの作成が厳しくなりそう
+
+```js
+var PostList = React.createClass({
+  mixins: [StoreMixin],
+  propTypes:{
+    context:React.PropTypes.object.isRequired
+  },
+  getInitialState: function() {
+    return this.getStateFromStores();
+  },
+  getStateFromStores: function () {
+    return {
+      posts: this.getStore(ContentListStore).getState().contentList,
+      cssClass: 'home'
+    };
+  },
+  getDefaultProps: function() {
+    return {
+      page: '1'
+    };
+  },
+  componentDidMount: function() {
+    if(!this.state.posts){
+      this.props.context.executeAction(ContentActions.list);
+    }
+  },
+  :
+```
+
+---
+
+## yahoo/fluxible
+
+* コード量が少なくて把握しやすいけど、fluxibleを理解する必要がある
+* contextを引き回す感じはちょっとツラい...
+
+```js
+var Single = React.createClass({
+  mixins: [StoreMixin],
+  statics: {
+    storeListeners: {
+      _onChange: [ContentStore]
+    }
+  },
+  propTypes: {
+    context: React.PropTypes.object.isRequired,
+    params: React.PropTypes.object.isRequired
+  },
+```
+
+---
+
+## context
+
+<img src="img/context.png" width="100%" />
+
+
+---
+
+class: center, middle
+
+### 今後に期待！
+
+---
+
+class: center, middle
+
+### <x-sushiyuki type="akami">Thanks</x-sushiyuki>
+
+http://koba04.github.io/slides/about-morpheus/
+
+    </textarea>
+    <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
+
