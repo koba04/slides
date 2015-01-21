@@ -19,7 +19,7 @@
       li {
         margin-bottom: 10px;
       }
-      img {
+      .shadow {
         box-shadow: 0px 5px 15px -5px rgba(0, 0, 0, 0.8);
       }
       .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
@@ -38,9 +38,13 @@ class: center, middle
 
 ---
 
+class: center
+
 ## Morpheus
 
-<img src="img/morpheus.png" width="100%" />
+<img src="img/morpheus.png" class="shadow" width="100%" />
+
+https://github.com/vesparny/morpheus
 
 ---
 
@@ -49,7 +53,7 @@ class: center, middle
 * Isomorphic web publishing platform
 * React.jsによるserver-side rendering
 * markdownで書ける
-* まだ開発が始まったばかり
+* まだ開発が始まったばかりでnpmにpublishもされていない
 
 ---
 
@@ -57,7 +61,8 @@ class: center, middle
 
 * React.js
 * Flux
-    * yahoo/fluxible
+    * fluxible
+    * flux-router-component
 * express
 * browserify
 * gulp
@@ -68,7 +73,7 @@ class: center
 
 ## Try it!
 
-<img src="img/en-blog.png" width="80%" />
+<img src="img/en-blog.png" class="shadow" width="80%" />
 
 http://en.blog.koba04.com/ (hosted heroku)
 
@@ -77,6 +82,30 @@ http://en.blog.koba04.com/ (hosted heroku)
 class: center, middle
 
 ## Implementation
+
+---
+
+## renderToStaticMarkup
+
+htmlの部分はrenderToStaticMarkupでrenderしている
+
+```js
+  render: function(res, markup, state) {
+    state = state || res.locals.state;
+    var html = React.renderToStaticMarkup(HtmlComponent({ //jshint ignore:line
+      state: state,
+      markup: markup,
+      context: res.locals.context.getComponentContext()
+    }));
+    res.set({
+      'content-type': 'text/html; charset=utf-8'
+    });
+    res.write('<!doctype>' + html);
+    res.end();
+  },
+```
+
+https://github.com/vesparny/morpheus/blob/develop/server/utils.js
 
 ---
 
@@ -107,33 +136,24 @@ https://github.com/vesparny/morpheus/blob/develop/server/routes/index.js
 
 ---
 
-## renderToStaticMarkup
+## serialize
 
-htmlの部分はrenderToStaticMarkupでrenderしている
+yahoo/serialize-javascriptを使ってscript tagの中に入れている
 
 ```js
-  render: function(res, markup, state) {
-    state = state || res.locals.state;
-    var html = React.renderToStaticMarkup(HtmlComponent({ //jshint ignore:line
-      state: state,
-      markup: markup,
-      context: res.locals.context.getComponentContext()
-    }));
-    res.set({
-      'content-type': 'text/html; charset=utf-8'
-    });
-    res.write('<!doctype>' + html);
-    res.end();
-  },
+res.locals.state = 'window.Morpheus=' + serialize(fluxibleApp.dehydrate(context)) + ';';
 ```
 
-https://github.com/vesparny/morpheus/blob/develop/server/utils.js
+https://github.com/yahoo/serialize-javascript
+
+* JSON.stringifyをベースにRegExpとFunctionはそのまま残して、`<>\/\u2028\u2029`をエスケープしている
+* JSON.stringifyの第二引数(replacer)を実装している
 
 ---
 
 ## Theme
 
-npmでThemeがインストール出来るようにしたい [\#14](https://github.com/vesparny/morpheus/issues/14)
+npmでThemeやComponentがインストール出来るようにしたい [\#14](https://github.com/vesparny/morpheus/issues/14), [\#10](https://github.com/vesparny/morpheus/issues/10)
 
 ```sh
 content/themes/blablabla
@@ -193,8 +213,10 @@ var PostList = React.createClass({
 
 ## yahoo/fluxible
 
-* コード量が少なくて把握しやすいけど、fluxibleを理解する必要がある
+* Morpheus自体のコードは少なくて把握しやすいけど、fluxibleを理解する必要がある
 * contextを引き回す感じはちょっとツラい...
+* contextを使うPageを構成するようなComponentと、DisqusのようなパーツとなるComponent(contextを渡さない)を分ける必要がありそう
+* ただ、flux-router-componentを使っていてこれのNavLinkがcontextを必要とするのが辛い...
 
 ```js
 var Single = React.createClass({
@@ -214,8 +236,33 @@ var Single = React.createClass({
 
 ## context
 
-<img src="img/context.png" width="100%" />
+<img src="img/context.png" class="shadow" width="100%" />
 
+---
+
+class: center, middle
+
+### えっ、Node.jsでserever動かしたくない?
+
+---
+
+class: center
+
+## Static site generator like Jekyll
+
+<img src="img/static-site.png" class="shadow" width="100%" />
+
+http://braddenver.com/blog/2015/react-static-site.html
+
+https://github.com/BradDenver/react-static-site
+
+---
+
+## react-static-site
+
+* React.js + ReactRouterの組み合わせ
+* 開発時は、WebpackDevServerでserverを立ち上げて、react-hot-loaderを組み合わせてLive Reloadで開発出来る
+* BuildすることでrenderStaticMarkupを使った静的なHTMLとして吐き出すことが出来る
 
 ---
 
@@ -227,7 +274,7 @@ class: center, middle
 
 class: center, middle
 
-### <x-sushiyuki type="akami">Thanks</x-sushiyuki>
+### <x-sushiyuki type="ebi">Thanks</x-sushiyuki>
 
 http://koba04.github.io/slides/about-morpheus/
 
